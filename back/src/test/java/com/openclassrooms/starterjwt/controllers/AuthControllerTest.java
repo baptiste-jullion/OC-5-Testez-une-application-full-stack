@@ -149,5 +149,37 @@ class AuthControllerTest {
         assertThat(savedUser.getLastName()).isEqualTo(signupRequest.getLastName());
         assertThat(savedUser.getPassword()).isEqualTo("hashed-password");
     }
-}
 
+    @Test
+    @DisplayName("authenticateUser should default admin to false when user not found")
+    void authenticateUser_shouldDefaultAdminToFalseWhenUserNotFound() throws Exception {
+        LoginRequest loginRequest = new LoginRequest();
+        loginRequest.setEmail("ghost@example.com");
+        loginRequest.setPassword("password");
+
+        UserDetailsImpl userDetails = UserDetailsImpl.builder()
+                                                     .id(42L)
+                                                     .username(loginRequest.getEmail())
+                                                     .firstName("Ghost")
+                                                     .lastName("User")
+                                                     .admin(false)
+                                                     .password("encoded")
+                                                     .build();
+
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(userDetails);
+        when(authenticationManager.authenticate(any(Authentication.class))).thenReturn(authentication);
+        when(jwtUtils.generateJwtToken(authentication)).thenReturn("jwt-token");
+        when(userRepository.findByEmail(loginRequest.getEmail())).thenReturn(Optional.empty());
+
+        mockMvc.perform(post("/api/auth/login")
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content(objectMapper.writeValueAsString(loginRequest)))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.token").value("jwt-token"))
+               .andExpect(jsonPath("$.username").value(loginRequest.getEmail()))
+               .andExpect(jsonPath("$.admin").value(false));
+
+        verify(userRepository).findByEmail(loginRequest.getEmail());
+    }
+}
