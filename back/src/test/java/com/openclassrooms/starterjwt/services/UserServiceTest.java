@@ -39,8 +39,8 @@ public class UserServiceTest {
     }
 
     @Test
-    @DisplayName("Find a user by ID")
-    void findByIdReturnsUser() {
+    @DisplayName("findById should return user by id")
+    void findById_shouldReturnUserById() {
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
 
         User foundUser = userService.findById(user.getId());
@@ -51,8 +51,8 @@ public class UserServiceTest {
     }
 
     @Test
-    @DisplayName("Delete a user by ID")
-    void deleteUserById() {
+    @DisplayName("delete should delete user by id")
+    void delete_shouldDeleteUserById() {
         userService.delete(user.getId());
 
         verify(userRepository, times(1)).deleteById(user.getId());

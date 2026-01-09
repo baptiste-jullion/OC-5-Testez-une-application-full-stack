@@ -58,8 +58,8 @@ public class SessionServiceTest {
     }
 
     @Test
-    @DisplayName("Create a Session")
-    public void createSession() {
+    @DisplayName("create should create and return session")
+    public void create_shouldCreateAndReturnSession() {
         when(sessionRepository.save(session)).thenReturn(session);
 
         Session createdSession = sessionService.create(session);
@@ -71,8 +71,8 @@ public class SessionServiceTest {
     }
 
     @Test
-    @DisplayName("Delete a Session")
-    public void deleteSession() {
+    @DisplayName("delete should delete session by id")
+    public void delete_shouldDeleteSessionById() {
         Long sessionId = 1L;
 
         sessionService.delete(sessionId);
@@ -81,8 +81,8 @@ public class SessionServiceTest {
     }
 
     @Test
-    @DisplayName("Find all Sessions")
-    public void findAllSessions() {
+    @DisplayName("findAll should return all sessions")
+    public void findAll_shouldReturnAllSessions() {
         List<Session> sessions = Arrays.asList(session, new Session());
         when(sessionRepository.findAll()).thenReturn(sessions);
 
@@ -93,8 +93,8 @@ public class SessionServiceTest {
     }
 
     @Test
-    @DisplayName("Get Session by ID")
-    public void getSessionById() {
+    @DisplayName("findById should return session by id")
+    public void findById_shouldReturnSessionById() {
         when(sessionRepository.findById(session.getId())).thenReturn(Optional.ofNullable(session));
 
         Session foundSession = sessionService.getById(session.getId());
@@ -103,8 +103,8 @@ public class SessionServiceTest {
     }
 
     @Test
-    @DisplayName("Update a Session")
-    public void updateSession() {
+    @DisplayName("update should update and return session")
+    public void update_shouldUpdateAndReturnSession() {
         Long newId = 20L;
 
         when(sessionRepository.save(session)).thenReturn(session);
@@ -118,8 +118,8 @@ public class SessionServiceTest {
     }
 
     @Test
-    @DisplayName("Participate - Success")
-    public void participateSuccess() {
+    @DisplayName("participate should add user to session when user and session exist")
+    public void participate_shouldAddUserToSessionWhenUserAndSessionExist() {
         when(sessionRepository.findById(session.getId())).thenReturn(Optional.ofNullable(session));
         when(userRepository.findById(user.getId())).thenReturn(Optional.ofNullable(user));
 
@@ -130,8 +130,8 @@ public class SessionServiceTest {
     }
 
     @Test
-    @DisplayName("Participate - User not found")
-    public void participateUserNotFound() {
+    @DisplayName("participate should throw NotFoundException when user does not exist")
+    public void participate_shouldThrowNotFoundExceptionWhenUserDoesNotExist() {
         when(sessionRepository.findById(session.getId())).thenReturn(Optional.ofNullable(session));
         when(userRepository.findById(user.getId())).thenReturn(Optional.empty());
 
@@ -140,8 +140,8 @@ public class SessionServiceTest {
     }
 
     @Test
-    @DisplayName("Participate - Session not found")
-    public void participateSessionNotFound() {
+    @DisplayName("participate should throw NotFoundException when session does not exist")
+    public void participate_shouldThrowNotFoundExceptionWhenSessionDoesNotExist() {
         when(sessionRepository.findById(session.getId())).thenReturn(Optional.empty());
         when(userRepository.findById(user.getId())).thenReturn(Optional.ofNullable(user));
 
@@ -150,8 +150,8 @@ public class SessionServiceTest {
     }
 
     @Test
-    @DisplayName("Participate - Already participating")
-    public void participateAlreadyParticipating() {
+    @DisplayName("participate should throw BadRequestException when user already participating")
+    public void participate_shouldThrowBadRequestExceptionWhenUserAlreadyParticipating() {
         session.getUsers()
                .add(user);
         when(sessionRepository.findById(session.getId())).thenReturn(Optional.ofNullable(session));
@@ -161,8 +161,8 @@ public class SessionServiceTest {
     }
 
     @Test
-    @DisplayName("No Longer Participate - Success")
-    public void noLongerParticipateSuccess() {
+    @DisplayName("noLongerParticipate should remove user from session")
+    public void noLongerParticipate_shouldRemoveUserFromSession() {
         session.getUsers()
                .add(user);
 
@@ -175,8 +175,8 @@ public class SessionServiceTest {
     }
 
     @Test
-    @DisplayName("No Longer Participate - Session not found")
-    public void noLongerParticipateSessionNotFound() {
+    @DisplayName("noLongerParticipate should throw NotFoundException when session does not exist")
+    public void noLongerParticipate_shouldThrowNotFoundExceptionWhenSessionDoesNotExist() {
         Long wrongSessionId = session.getId() + 1;
 
         when(sessionRepository.findById(wrongSessionId)).thenReturn(Optional.empty());
@@ -185,8 +185,8 @@ public class SessionServiceTest {
     }
 
     @Test
-    @DisplayName("No Longer Participate - Not participating")
-    public void noLongerParticipateNotParticipating() {
+    @DisplayName("noLongerParticipate should throw BadRequestException when user not participating")
+    public void noLongerParticipate_shouldThrowBadRequestExceptionWhenUserNotParticipating() {
         when(sessionRepository.findById(session.getId())).thenReturn(Optional.ofNullable(session));
 
         assertThrows(BadRequestException.class, () -> sessionService.noLongerParticipate(session.getId(), user.getId()));
@@ -194,4 +194,3 @@ public class SessionServiceTest {
 
 
 }
-

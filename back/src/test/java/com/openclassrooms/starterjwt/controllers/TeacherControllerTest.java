@@ -28,7 +28,7 @@ public class TeacherControllerTest {
 
     @Test
     @WithMockUser
-    @DisplayName("Get a teacher by ID - Success")
+    @DisplayName("getTeacher should return teacher")
     public void getTeacher_shouldReturnTeacher() throws Exception {
         Long id = 1L;
         String lastName = "Delahaye";
@@ -48,7 +48,7 @@ public class TeacherControllerTest {
 
     @Test
     @WithMockUser
-    @DisplayName("Get a teacher by ID - Not Found")
+    @DisplayName("getTeacher should return not found")
     public void getTeacher_shouldReturnNotFound() throws Exception {
         Long id = 999L;
         when(teacherService.findById(id)).thenReturn(null);
@@ -59,7 +59,7 @@ public class TeacherControllerTest {
 
     @Test
     @WithMockUser
-    @DisplayName("Get a teacher by ID - Bad Request")
+    @DisplayName("getTeacher should return bad request")
     public void getTeacher_shouldReturnBadRequest() throws Exception {
         String invalidId = "abc";
 
@@ -69,7 +69,7 @@ public class TeacherControllerTest {
 
     @Test
     @WithMockUser
-    @DisplayName("Find all teachers - Success")
+    @DisplayName("findAllTeachers should return list of teachers")
     public void findAllTeachers_shouldReturnListOfTeachers() throws Exception {
         Long id1 = 1L;
         String lastName1 = "Delahaye";

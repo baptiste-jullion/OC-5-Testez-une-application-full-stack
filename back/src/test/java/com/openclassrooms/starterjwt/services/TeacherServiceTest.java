@@ -39,8 +39,8 @@ public class TeacherServiceTest {
     }
 
     @Test
-    @DisplayName("findAll returns all teachers")
-    public void findAllReturnsTeachers() {
+    @DisplayName("findAll should return list of teachers")
+    public void findAll_shouldReturnListOfTeachers() {
         List<Teacher> teachers = Arrays.asList(teacher, Teacher.builder()
                                                                .id(2L)
                                                                .build());
@@ -53,8 +53,8 @@ public class TeacherServiceTest {
     }
 
     @Test
-    @DisplayName("findById returns the teacher when found")
-    public void findByIdReturnsTeacher() {
+    @DisplayName("findById should return teacher by id")
+    public void findById_shouldReturnTeacherById() {
         when(teacherRepository.findById(teacher.getId())).thenReturn(Optional.of(teacher));
 
         Teacher result = teacherService.findById(teacher.getId());
@@ -64,8 +64,8 @@ public class TeacherServiceTest {
     }
 
     @Test
-    @DisplayName("findById returns null when teacher not found")
-    public void findByIdReturnsNullWhenNotFound() {
+    @DisplayName("findById should return null when teacher does not exist")
+    public void findById_shouldReturnNullWhenTeacherDoesNotExist() {
         Long unknownId = 999L;
         when(teacherRepository.findById(unknownId)).thenReturn(Optional.empty());
 
@@ -75,4 +75,3 @@ public class TeacherServiceTest {
         verify(teacherRepository, times(1)).findById(unknownId);
     }
 }
-

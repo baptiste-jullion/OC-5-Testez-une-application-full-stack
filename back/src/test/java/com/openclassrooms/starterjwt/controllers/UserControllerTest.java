@@ -66,7 +66,7 @@ class UserControllerTest {
 
     @Test
     @WithMockUser(username = "user@example.com")
-    @DisplayName("Get user by ID - success")
+    @DisplayName("findById should return user")
     void findById_shouldReturnUser() throws Exception {
         when(userService.findById(user.getId())).thenReturn(user);
         when(userMapper.toDto(user)).thenReturn(userDto);
@@ -84,7 +84,7 @@ class UserControllerTest {
 
     @Test
     @WithMockUser(username = "user@example.com")
-    @DisplayName("Get user by ID - not found")
+    @DisplayName("findById should return not found")
     void findById_shouldReturnNotFound() throws Exception {
         when(userService.findById(user.getId())).thenReturn(null);
 
@@ -97,7 +97,7 @@ class UserControllerTest {
 
     @Test
     @WithMockUser(username = "user@example.com")
-    @DisplayName("Get user by ID - bad request")
+    @DisplayName("findById should return bad request")
     void findById_shouldReturnBadRequest() throws Exception {
         mockMvc.perform(get("/api/user/invalid"))
                .andExpect(status().isBadRequest());
@@ -107,7 +107,7 @@ class UserControllerTest {
 
     @Test
     @WithMockUser(username = "user@example.com")
-    @DisplayName("Delete user by ID - success")
+    @DisplayName("delete should remove user")
     void delete_shouldRemoveUser() throws Exception {
         when(userService.findById(user.getId())).thenReturn(user);
 
@@ -120,7 +120,7 @@ class UserControllerTest {
 
     @Test
     @WithMockUser(username = "other@example.com")
-    @DisplayName("Delete user by ID - unauthorized")
+    @DisplayName("delete should return unauthorized when different user")
     void delete_shouldReturnUnauthorizedWhenDifferentUser() throws Exception {
         when(userService.findById(user.getId())).thenReturn(user);
 
@@ -133,7 +133,7 @@ class UserControllerTest {
 
     @Test
     @WithMockUser(username = "user@example.com")
-    @DisplayName("Delete user by ID - not found")
+    @DisplayName("delete should return not found")
     void delete_shouldReturnNotFound() throws Exception {
         when(userService.findById(user.getId())).thenReturn(null);
 
@@ -146,7 +146,7 @@ class UserControllerTest {
 
     @Test
     @WithMockUser(username = "user@example.com")
-    @DisplayName("Delete user by ID - bad request")
+    @DisplayName("delete should return bad request")
     void delete_shouldReturnBadRequest() throws Exception {
         mockMvc.perform(delete("/api/user/invalid"))
                .andExpect(status().isBadRequest());
@@ -154,4 +154,3 @@ class UserControllerTest {
         verifyNoInteractions(userService);
     }
 }
-
