@@ -12,13 +12,26 @@
         "project": [
           "tsconfig.json"
         ],
-        "createDefaultProgram": true
+        "createDefaultProgram": true,
+        "tsconfigRootDir": __dirname
       },
       "extends": [
         "plugin:@angular-eslint/recommended",
         "plugin:@angular-eslint/template/process-inline-templates"
       ],
       "rules": {
+    },
+    {
+      "files": [
+        "cypress/**/*.ts"
+      ],
+      "parserOptions": {
+        "project": [
+          "./cypress/tsconfig.json"
+        ],
+        "tsconfigRootDir": __dirname
+      },
+      "rules": {}
         "@angular-eslint/directive-selector": [
           "error",
           {

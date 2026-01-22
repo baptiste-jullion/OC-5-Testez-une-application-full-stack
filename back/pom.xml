@@ -119,6 +119,18 @@
                         <goals>
                             <goal>report</goal>
                         </goals>
+                        <configuration>
+                            <excludes>
+                                <exclude>com/openclassrooms/starterjwt/dto/**/*</exclude>
+                                <exclude>com.openclassrooms.starterjwt.dto.*</exclude>
+                                <exclude>com.openclassrooms.starterjwt.dto.**</exclude>
+                                <exclude>com/openclassrooms/starterjwt/payload/**/*</exclude>
+                                <exclude>com.openclassrooms.starterjwt.payload.*</exclude>
+                                <exclude>com.openclassrooms.starterjwt.payload.**</exclude>
+                                <exclude>com/openclassrooms/starterjwt/SpringBootSecurityJwtApplication*</exclude>
+                                <exclude>com.openclassrooms.starterjwt.SpringBootSecurityJwtApplication*</exclude>
+                            </excludes>
+                        </configuration>
                     </execution>
                     <execution>
                         <id>jacoco-check</id>
