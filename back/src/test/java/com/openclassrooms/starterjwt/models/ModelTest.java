@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.Date;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ModelTest {
 
@@ -101,4 +102,54 @@ class ModelTest {
         assertThat(session.getUpdatedAt()).isAfterOrEqualTo(created);
         assertThat(session.getName()).isEqualTo("Morning Flow");
     }
+
+        @Test
+        @DisplayName("User builder enforces required fields and toString")
+        void userBuilderNullChecks() {
+                assertThat(User.builder().toString()).contains("User.UserBuilder");
+
+                assertThatThrownBy(() -> User.builder()
+                                .lastName("Last")
+                                .firstName("First")
+                                .password("pwd")
+                                .admin(true)
+                                .build()).isInstanceOf(NullPointerException.class);
+
+                assertThatThrownBy(() -> User.builder()
+                                .email("a@yoga.com")
+                                .firstName("First")
+                                .password("pwd")
+                                .admin(false)
+                                .build()).isInstanceOf(NullPointerException.class);
+
+                assertThatThrownBy(() -> User.builder()
+                                .email("a@yoga.com")
+                                .lastName("Last")
+                                .password("pwd")
+                                .admin(false)
+                                .build()).isInstanceOf(NullPointerException.class);
+
+                assertThatThrownBy(() -> User.builder()
+                                .email("a@yoga.com")
+                                .lastName("Last")
+                                .firstName("First")
+                        .admin(false)
+                        .build()).isInstanceOf(NullPointerException.class);
+        }
+
+        @Test
+        @DisplayName("User builder setters reject null values")
+        void userBuilderSetterNullGuards() {
+                assertThatThrownBy(() -> User.builder().email(null)).isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> User.builder().lastName(null)).isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> User.builder().firstName(null)).isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> User.builder().password(null)).isInstanceOf(NullPointerException.class);
+        }
+
+        @Test
+        @DisplayName("Teacher and Session builder toString branches")
+        void builderToStringBranches() {
+                assertThat(Teacher.builder().firstName("Alpha").toString()).contains("Teacher.TeacherBuilder");
+                assertThat(Session.builder().name("Gentle Flow").toString()).contains("Gentle Flow");
+        }
 }
