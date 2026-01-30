@@ -1,74 +1,71 @@
-# Yoga App – Test & Run Guide
+# Yoga App
 
-## Overview
-Full-stack yoga booking app with Spring Boot backend and Angular frontend. This guide explains how to set up MySQL, run the app, execute tests, and view coverage (front, back, and e2e) with the 80% target on all indicators.
+## Présentation
+Application full-stack de réservation de cours de yoga : backend en Spring Boot et frontend en Angular.
 
-## Prerequisites
-- Java 11 (JDK)
-- Node.js 16 + npm
-- Angular CLI 14 (`npm install -g @angular/cli@14`)
-- MySQL running on port 3306
+## Prérequis
+- Java 11+ (JDK)
+- Node.js (>=16) + npm
+- Angular CLI 14
+- MySQL
 
-## Database Setup
-1. Start MySQL on port 3306.
-2. Create schema and seed data:
-   ```sql
-   SOURCE ressources/sql/script.sql;
-   ```
-3. Default admin credentials: `yoga@studio.com / test!1234`.
+## Base de données
+1. Démarrer MySQL.
+2. Charger le schéma et les données depuis `ressources/sql/script.sql`.
+3. Compte administrateur par défaut : `yoga@studio.com / test!1234`.
 
-## Install & Run
-### Backend (Spring Boot)
+## Lancer l'application
+
+### Backend
 ```bash
 cd back
 mvn clean install
 mvn spring-boot:run
 ```
-API listens on `http://localhost:8080`.
 
-### Frontend (Angular)
+### Frontend
 ```bash
 cd front
 npm install
 npm run start
 ```
-App is available at `http://localhost:4200`. Start the backend before opening the UI.
 
-## Usage Checks
-- Login as admin: `yoga@studio.com / test!1234`
-- Verify admin actions: create, update, delete a session; logout.
-- Create a user account, login, and join/leave a session.
+## Lancer les tests
 
-## Testing & Coverage
-### Backend (JUnit/Mockito + JaCoCo)
+### Tests backend
 ```bash
 cd back
 mvn clean test
-mvn verify  # generates JaCoCo report
 ```
-Coverage report: `back/target/site/jacoco/index.html` (DTO/payload classes are excluded per test plan).
+
+### Tests unitaires frontend (Jest)
+```bash
+cd front
+npm test
+```
+
+### Tests End-to-End (Cypress)
+```bash
+cd front
+npm run e2e:ci
+```
+
+## Générer les rapports de couverture
+
+### Backend (JaCoCo)
+```bash
+cd back
+mvn clean test jacoco:report
+```
 
 ### Frontend (Jest)
 ```bash
 cd front
-npm run test
+npm test -- --coverage --coverageDirectory=coverage
 ```
-Coverage report: `front/coverage/jest/lcov-report/index.html`.
 
-### End-to-End (Cypress + NYC)
-Start the frontend dev server (`npm run start`) and backend, then run:
+### E2E (Cypress + nyc)
 ```bash
 cd front
-npm run cypress:run        # headless
-# or
-npm run cypress:open       # interactive
-
-# Generate e2e coverage after a run
 npm run e2e:coverage
 ```
-Coverage report: `front/coverage/lcov-report/index.html`.
-
-## Notes
-- Keep MySQL, backend, and frontend running when executing Cypress tests; API calls are mocked in specs.
-- If ports differ, update proxies/configs accordingly (`front/proxy.config.json`).
-- For a fresh verification, clone the repo into a new directory and replay the steps above.
