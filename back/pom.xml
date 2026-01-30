@@ -110,6 +110,7 @@
                     <excludes>
                         <exclude>**/dto/**</exclude>
                         <exclude>**/payload/**</exclude>
+                        <exclude>**/SpringBootSecurityJwtApplication*</exclude>
                     </excludes>
                 </configuration>
                 <executions>
@@ -139,6 +140,7 @@
                                     <excludes>
                                         <exclude>**/dto/**</exclude>
                                         <exclude>**/payload/**</exclude>
+                                        <exclude>**/SpringBootSecurityJwtApplication*</exclude>
                                     </excludes>
                                     <limits>
                                         <limit>
