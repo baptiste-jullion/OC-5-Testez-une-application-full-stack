@@ -1,22 +1,20 @@
 package com.openclassrooms.starterjwt.controllers;
 
-import com.openclassrooms.starterjwt.dto.UserDto;
-import com.openclassrooms.starterjwt.mapper.UserMapper;
 import com.openclassrooms.starterjwt.models.User;
-import com.openclassrooms.starterjwt.services.UserService;
+import com.openclassrooms.starterjwt.repository.UserRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.LocalDateTime;
-
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -30,69 +28,53 @@ class UserControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
-    private UserService userService;
+    @Autowired
+    private UserRepository userRepository;
 
-    @MockBean
-    private UserMapper userMapper;
-
-    private User user;
-    private UserDto userDto;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @BeforeEach
     void setup() {
-        user = User.builder()
-                   .id(1L)
-                   .firstName("John")
-                   .lastName("Doe")
-                   .email("user@example.com")
-                   .admin(false)
-                   .password("password")
-                   .createdAt(LocalDateTime.now())
-                   .updatedAt(LocalDateTime.now())
-                   .build();
+        userRepository.deleteAll();
+    }
 
-        userDto = new UserDto(
-                user.getId(),
-                user.getEmail(),
-                user.getLastName(),
-                user.getFirstName(),
-                user.isAdmin(),
-                null,
-                user.getCreatedAt(),
-                user.getUpdatedAt()
-        );
+    @AfterEach
+    void tearDown() {
+        userRepository.deleteAll();
+        SecurityContextHolder.clearContext();
+    }
+
+    private User persistUser() {
+        return userRepository.save(User.builder()
+                                       .email("user@example.com")
+                                       .firstName("John")
+                                       .lastName("Doe")
+                                       .password(passwordEncoder.encode("password"))
+                                       .admin(false)
+                                       .build());
     }
 
     @Test
     @WithMockUser(username = "user@example.com")
     @DisplayName("findById should return user")
     void findById_shouldReturnUser() throws Exception {
-        when(userService.findById(user.getId())).thenReturn(user);
-        when(userMapper.toDto(user)).thenReturn(userDto);
+        User savedUser = persistUser();
 
-        mockMvc.perform(get("/api/user/" + user.getId()))
+        mockMvc.perform(get("/api/user/" + savedUser.getId()))
                .andExpect(status().isOk())
-               .andExpect(jsonPath("$.id").value(userDto.getId()))
-               .andExpect(jsonPath("$.email").value(userDto.getEmail()))
-               .andExpect(jsonPath("$.firstName").value(userDto.getFirstName()))
-               .andExpect(jsonPath("$.lastName").value(userDto.getLastName()));
-
-        verify(userService).findById(user.getId());
-        verify(userMapper).toDto(user);
+               .andExpect(jsonPath("$.id").value(savedUser.getId()))
+               .andExpect(jsonPath("$.email").value(savedUser.getEmail()))
+               .andExpect(jsonPath("$.firstName").value(savedUser.getFirstName()))
+               .andExpect(jsonPath("$.lastName").value(savedUser.getLastName()));
     }
 
     @Test
     @WithMockUser(username = "user@example.com")
     @DisplayName("findById should return not found")
     void findById_shouldReturnNotFound() throws Exception {
-        when(userService.findById(user.getId())).thenReturn(null);
-
-        mockMvc.perform(get("/api/user/" + user.getId()))
+        mockMvc.perform(get("/api/user/999"))
                .andExpect(status().isNotFound());
-
-        verify(userService).findById(user.getId());
-        verifyNoInteractions(userMapper);
     }
 
     @Test
@@ -101,47 +83,38 @@ class UserControllerTest {
     void findById_shouldReturnBadRequest() throws Exception {
         mockMvc.perform(get("/api/user/invalid"))
                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(userService, userMapper);
     }
 
     @Test
     @WithMockUser(username = "user@example.com")
     @DisplayName("delete should remove user")
     void delete_shouldRemoveUser() throws Exception {
-        when(userService.findById(user.getId())).thenReturn(user);
+        User savedUser = persistUser();
 
-        mockMvc.perform(delete("/api/user/" + user.getId()))
+        mockMvc.perform(delete("/api/user/" + savedUser.getId()))
                .andExpect(status().isOk());
 
-        verify(userService).findById(user.getId());
-        verify(userService).delete(user.getId());
+        assertThat(userRepository.existsById(savedUser.getId())).isFalse();
     }
 
     @Test
     @WithMockUser(username = "other@example.com")
     @DisplayName("delete should return unauthorized when different user")
     void delete_shouldReturnUnauthorizedWhenDifferentUser() throws Exception {
-        when(userService.findById(user.getId())).thenReturn(user);
+        User savedUser = persistUser();
 
-        mockMvc.perform(delete("/api/user/" + user.getId()))
+        mockMvc.perform(delete("/api/user/" + savedUser.getId()))
                .andExpect(status().isUnauthorized());
 
-        verify(userService).findById(user.getId());
-        verify(userService, never()).delete(anyLong());
+        assertThat(userRepository.existsById(savedUser.getId())).isTrue();
     }
 
     @Test
     @WithMockUser(username = "user@example.com")
     @DisplayName("delete should return not found")
     void delete_shouldReturnNotFound() throws Exception {
-        when(userService.findById(user.getId())).thenReturn(null);
-
-        mockMvc.perform(delete("/api/user/" + user.getId()))
+        mockMvc.perform(delete("/api/user/123"))
                .andExpect(status().isNotFound());
-
-        verify(userService).findById(user.getId());
-        verify(userService, never()).delete(anyLong());
     }
 
     @Test
@@ -150,7 +123,5 @@ class UserControllerTest {
     void delete_shouldReturnBadRequest() throws Exception {
         mockMvc.perform(delete("/api/user/invalid"))
                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(userService);
     }
 }

@@ -2,27 +2,29 @@ package com.openclassrooms.starterjwt.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openclassrooms.starterjwt.dto.SessionDto;
-import com.openclassrooms.starterjwt.mapper.SessionMapper;
 import com.openclassrooms.starterjwt.models.Session;
-import com.openclassrooms.starterjwt.services.SessionService;
+import com.openclassrooms.starterjwt.models.Teacher;
+import com.openclassrooms.starterjwt.models.User;
+import com.openclassrooms.starterjwt.repository.SessionRepository;
+import com.openclassrooms.starterjwt.repository.TeacherRepository;
+import com.openclassrooms.starterjwt.repository.UserRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -38,63 +40,77 @@ class SessionControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
-    private SessionService sessionService;
+    @Autowired
+    private SessionRepository sessionRepository;
 
-    @MockBean
-    private SessionMapper sessionMapper;
+    @Autowired
+    private TeacherRepository teacherRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    private Teacher teacher;
+    private User attendeeOne;
+    private User attendeeTwo;
     private Session session;
-    private SessionDto sessionDto;
 
     @BeforeEach
     void setup() {
-        Date date = new Date();
-        LocalDateTime now = LocalDateTime.now();
+        sessionRepository.deleteAll();
+        userRepository.deleteAll();
+        teacherRepository.deleteAll();
 
-        session = Session.builder()
-                         .id(1L)
-                         .name("Morning Yoga")
-                         .description("Start the day on a calm note")
-                         .date(date)
-                         .users(new ArrayList<>())
-                         .build();
+        teacher = teacherRepository.save(Teacher.builder()
+                                               .firstName("Margot")
+                                               .lastName("Delahaye")
+                                               .build());
 
-        sessionDto = new SessionDto(
-                session.getId(),
-                session.getName(),
-                date,
-                1L,
-                session.getDescription(),
-                List.of(1L, 2L),
-                now,
-                now
-        );
+        attendeeOne = createUser("attendee1@example.com", "Alice", "Flow");
+        attendeeTwo = createUser("attendee2@example.com", "Bob", "Zen");
+
+        session = sessionRepository.save(Session.builder()
+                                               .name("Morning Yoga")
+                                               .description("Start the day on a calm note")
+                                               .date(new Date())
+                                               .teacher(teacher)
+                                               .users(new ArrayList<>())
+                                               .build());
+    }
+
+    @AfterEach
+    void tearDown() {
+        sessionRepository.deleteAll();
+        userRepository.deleteAll();
+        teacherRepository.deleteAll();
+    }
+
+    private User createUser(String email, String firstName, String lastName) {
+        return userRepository.save(User.builder()
+                                       .email(email)
+                                       .firstName(firstName)
+                                       .lastName(lastName)
+                                       .password("password")
+                                       .admin(false)
+                                       .build());
     }
 
     @Test
     @WithMockUser
     @DisplayName("findById should return session")
     void findById_shouldReturnSession() throws Exception {
-        when(sessionService.getById(session.getId())).thenReturn(session);
-        when(sessionMapper.toDto(session)).thenReturn(sessionDto);
-
         mockMvc.perform(get("/api/session/" + session.getId()))
                .andExpect(status().isOk())
-               .andExpect(jsonPath("$.id").value(sessionDto.getId()))
-               .andExpect(jsonPath("$.name").value(sessionDto.getName()));
+               .andExpect(jsonPath("$.id").value(session.getId()))
+               .andExpect(jsonPath("$.name").value(session.getName()))
+               .andExpect(jsonPath("$.teacher_id").value(teacher.getId()));
     }
 
     @Test
     @WithMockUser
     @DisplayName("findById should return not found")
     void findById_shouldReturnNotFound() throws Exception {
-        when(sessionService.getById(session.getId())).thenReturn(null);
-
-        mockMvc.perform(get("/api/session/" + session.getId()))
+        mockMvc.perform(get("/api/session/" + (session.getId() + 99)))
                .andExpect(status().isNotFound());
-
-        verify(sessionMapper, never()).toDto(any(Session.class));
     }
 
     @Test
@@ -103,21 +119,25 @@ class SessionControllerTest {
     void findById_shouldReturnBadRequest() throws Exception {
         mockMvc.perform(get("/api/session/invalid"))
                .andExpect(status().isBadRequest());
-
-        verify(sessionService, never()).getById(anyLong());
     }
 
     @Test
     @WithMockUser
     @DisplayName("findAll should return sessions")
     void findAll_shouldReturnSessions() throws Exception {
-        when(sessionService.findAll()).thenReturn(List.of(session));
-        when(sessionMapper.toDto(anyList())).thenReturn(List.of(sessionDto));
+        Session other = sessionRepository.save(Session.builder()
+                                                      .name("Evening Stretch")
+                                                      .description("Recover after work")
+                                                      .date(new Date())
+                                                      .teacher(teacher)
+                                                      .users(new ArrayList<>())
+                                                      .build());
 
         mockMvc.perform(get("/api/session"))
                .andExpect(status().isOk())
-               .andExpect(jsonPath("$[0].id").value(sessionDto.getId()))
-               .andExpect(jsonPath("$[0].name").value(sessionDto.getName()));
+               .andExpect(jsonPath("$", hasSize(2)))
+               .andExpect(jsonPath("$[0].id").value(session.getId()))
+               .andExpect(jsonPath("$[1].id").value(other.getId()));
     }
 
     @Test
@@ -125,47 +145,25 @@ class SessionControllerTest {
     @DisplayName("create should create session")
     void create_shouldCreateSession() throws Exception {
         SessionDto requestDto = new SessionDto(
-                null,
-                "Sunset Flow",
-                new Date(),
-                2L,
-                "Unwind after work",
-                List.of(3L),
-                null,
-                null
+            null,
+            "Sunset Flow",
+            new Date(),
+            teacher.getId(),
+            "Unwind after work",
+            List.of(attendeeOne.getId(), attendeeTwo.getId()),
+            null,
+            null
         );
-
-        Session createdSession = Session.builder()
-                                        .id(5L)
-                                        .name(requestDto.getName())
-                                        .description(requestDto.getDescription())
-                                        .date(requestDto.getDate())
-                                        .users(new ArrayList<>())
-                                        .build();
-
-        SessionDto createdDto = new SessionDto(
-                createdSession.getId(),
-                createdSession.getName(),
-                createdSession.getDate(),
-                requestDto.getTeacher_id(),
-                createdSession.getDescription(),
-                requestDto.getUsers(),
-                LocalDateTime.now(),
-                LocalDateTime.now()
-        );
-
-        when(sessionMapper.toEntity(any(SessionDto.class))).thenReturn(createdSession);
-        when(sessionService.create(createdSession)).thenReturn(createdSession);
-        when(sessionMapper.toDto(createdSession)).thenReturn(createdDto);
 
         mockMvc.perform(post("/api/session")
                        .contentType(MediaType.APPLICATION_JSON)
                        .content(objectMapper.writeValueAsString(requestDto)))
                .andExpect(status().isOk())
-               .andExpect(jsonPath("$.id").value(createdDto.getId()))
-               .andExpect(jsonPath("$.name").value(createdDto.getName()));
+               .andExpect(jsonPath("$.name").value("Sunset Flow"))
+               .andExpect(jsonPath("$.users", hasSize(2)))
+               .andExpect(jsonPath("$.users[0]").value(attendeeOne.getId()));
 
-        verify(sessionService).create(createdSession);
+        assertThat(sessionRepository.count()).isEqualTo(2);
     }
 
     @Test
@@ -174,26 +172,25 @@ class SessionControllerTest {
     void update_shouldUpdateSession() throws Exception {
         SessionDto requestDto = new SessionDto(
                 session.getId(),
-                session.getName(),
+                "Updated Session",
                 session.getDate(),
-                2L,
-                session.getDescription(),
-                List.of(4L),
+                teacher.getId(),
+                "Updated description",
+                List.of(attendeeTwo.getId()),
                 null,
                 null
         );
-
-        when(sessionMapper.toEntity(any(SessionDto.class))).thenReturn(session);
-        when(sessionService.update(eq(session.getId()), eq(session))).thenReturn(session);
-        when(sessionMapper.toDto(session)).thenReturn(sessionDto);
 
         mockMvc.perform(put("/api/session/" + session.getId())
                        .contentType(MediaType.APPLICATION_JSON)
                        .content(objectMapper.writeValueAsString(requestDto)))
                .andExpect(status().isOk())
-               .andExpect(jsonPath("$.id").value(sessionDto.getId()));
+               .andExpect(jsonPath("$.name").value("Updated Session"))
+               .andExpect(jsonPath("$.description").value("Updated description"))
+               .andExpect(jsonPath("$.users[0]").value(attendeeTwo.getId()));
 
-        verify(sessionService).update(eq(session.getId()), eq(session));
+        Session updated = sessionRepository.findById(session.getId()).orElseThrow();
+        assertThat(updated.getName()).isEqualTo("Updated Session");
     }
 
     @Test
@@ -212,35 +209,27 @@ class SessionControllerTest {
         );
 
         mockMvc.perform(put("/api/session/invalid")
-                       .contentType(MediaType.APPLICATION_JSON)
-                       .content(objectMapper.writeValueAsString(requestDto)))
+                   .contentType(MediaType.APPLICATION_JSON)
+                   .content(objectMapper.writeValueAsString(requestDto)))
                .andExpect(status().isBadRequest());
-
-        verify(sessionService, never()).update(anyLong(), any(Session.class));
     }
 
     @Test
     @WithMockUser
     @DisplayName("delete should delete session")
     void delete_shouldDeleteSession() throws Exception {
-        when(sessionService.getById(session.getId())).thenReturn(session);
-
         mockMvc.perform(delete("/api/session/" + session.getId()))
                .andExpect(status().isOk());
 
-        verify(sessionService).delete(session.getId());
+        assertThat(sessionRepository.existsById(session.getId())).isFalse();
     }
 
     @Test
     @WithMockUser
     @DisplayName("delete should return not found")
     void delete_shouldReturnNotFound() throws Exception {
-        when(sessionService.getById(session.getId())).thenReturn(null);
-
-        mockMvc.perform(delete("/api/session/" + session.getId()))
+        mockMvc.perform(delete("/api/session/" + (session.getId() + 55)))
                .andExpect(status().isNotFound());
-
-        verify(sessionService, never()).delete(anyLong());
     }
 
     @Test
@@ -249,20 +238,19 @@ class SessionControllerTest {
     void delete_shouldReturnBadRequest() throws Exception {
         mockMvc.perform(delete("/api/session/invalid"))
                .andExpect(status().isBadRequest());
-
-        verify(sessionService, never()).delete(anyLong());
     }
 
     @Test
     @WithMockUser
     @DisplayName("participate should add user")
     void participate_shouldAddUser() throws Exception {
-        Long userId = 7L;
+        Long userId = attendeeOne.getId();
 
         mockMvc.perform(post("/api/session/" + session.getId() + "/participate/" + userId))
                .andExpect(status().isOk());
 
-        verify(sessionService).participate(session.getId(), userId);
+        Session updated = sessionRepository.findById(session.getId()).orElseThrow();
+        assertThat(updated.getUsers()).extracting(User::getId).containsExactly(userId);
     }
 
     @Test
@@ -271,20 +259,21 @@ class SessionControllerTest {
     void participate_shouldReturnBadRequest() throws Exception {
         mockMvc.perform(post("/api/session/invalid/participate/1"))
                .andExpect(status().isBadRequest());
-
-        verify(sessionService, never()).participate(anyLong(), anyLong());
     }
 
     @Test
     @WithMockUser
     @DisplayName("noLongerParticipate should remove user")
     void noLongerParticipate_shouldRemoveUser() throws Exception {
-        Long userId = 4L;
+        session.getUsers().add(attendeeTwo);
+        sessionRepository.save(session);
+        Long userId = attendeeTwo.getId();
 
         mockMvc.perform(delete("/api/session/" + session.getId() + "/participate/" + userId))
                .andExpect(status().isOk());
 
-        verify(sessionService).noLongerParticipate(session.getId(), userId);
+        Session updated = sessionRepository.findById(session.getId()).orElseThrow();
+        assertThat(updated.getUsers()).isEmpty();
     }
 
     @Test
@@ -293,8 +282,6 @@ class SessionControllerTest {
     void noLongerParticipate_shouldReturnBadRequest() throws Exception {
         mockMvc.perform(delete("/api/session/invalid/participate/1"))
                .andExpect(status().isBadRequest());
-
-        verify(sessionService, never()).noLongerParticipate(anyLong(), anyLong());
     }
 }
 
